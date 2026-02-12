@@ -4,6 +4,7 @@
 #include "atlsync.h"
 #include <commctrl.h>
 #include "commonresourceconstants.h"
+#include <thread>
 
 #ifndef PBST_NORMAL
 #define PBST_NORMAL             0x0001

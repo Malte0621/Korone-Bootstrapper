@@ -460,7 +460,7 @@ namespace HttpTools
 		return statusCode;
 	}
 
-	int httpBoost(IInstallerSite *site, const char *method, const std::string &host, const std::string &path, std::istream &input, const char *contentType, std::string &etag, std::ostream &result, bool ignoreCancel, std::function<void(int, int)> progress, bool log)
+	int httpBoost(IInstallerSite* site, const char* method, const std::string& host, const std::string& path, std::istream& input, const char* contentType, std::string& etag, std::ostream& result, bool ignoreCancel, std::function<void(int, int)> progress, bool log)
 	{
 		if (log)
 		{
@@ -529,7 +529,7 @@ namespace HttpTools
 		hints.ai_socktype = SOCK_STREAM;
 		hints.ai_protocol = IPPROTO_TCP;
 
-		addrinfo *addrResult = nullptr;
+		addrinfo* addrResult = nullptr;
 		int rc = getaddrinfo(hostName.c_str(), port.c_str(), &hints, &addrResult);
 		if (rc != 0 || addrResult == nullptr)
 		{
@@ -542,7 +542,7 @@ namespace HttpTools
 		}
 
 		SOCKET sock = INVALID_SOCKET;
-		for (addrinfo *p = addrResult; p != nullptr; p = p->ai_next)
+		for (addrinfo* p = addrResult; p != nullptr; p = p->ai_next)
 		{
 			sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
 			if (sock == INVALID_SOCKET)
@@ -564,7 +564,7 @@ namespace HttpTools
 
 		// send request
 		size_t remain = requestStr.size();
-		const char *ptr = requestStr.data();
+		const char* ptr = requestStr.data();
 		while (remain > 0)
 		{
 			int s = ::send(sock, ptr, (int)remain, 0);
@@ -677,57 +677,73 @@ namespace HttpTools
 			{
 				return httpBoost(site, method, host, path, input, contentType, etag, result, ignoreCancel, progress, log);
 			}
-			catch (std::exception &)
+			catch (std::exception&)
 			{
 				LLOG_ENTRY(site->Logger(), "httpBoost failed, falling back to winInet");
 				return httpWinInet(site, method, host, path, input, contentType, etag, result, ignoreCancel, progress);
 			}
 		}
 
-		int httpPost(IInstallerSite * site, std::string host, std::string path, std::istream & input, const char *contentType, std::ostream &result, bool ignoreCancel, std::function<void(int, int)> progress, bool log)
+		return status_code;
+	}
+
+	int http(IInstallerSite* site, const char* method, const std::string& host, const std::string& path, std::istream& input, const char* contentType, std::string& etag, std::ostream& result, bool ignoreCancel, std::function<void(int, int)> progress, bool log)
+	{
+		try
 		{
-			std::string etag;
-			return http(site, "POST", host, path, input, contentType, etag, result, ignoreCancel, progress, log);
+			return httpBoost(site, method, host, path, input, contentType, etag, result, ignoreCancel, progress, log);
 		}
-
-		int httpGetCdn(IInstallerSite * site, std::string secondaryHost, std::string path, std::string & etag, std::ostream & result, bool ignoreCancel, std::function<void(int, int)> progress)
+		catch (std::exception&)
 		{
-			std::string cdnHost;
-			if (site->UseNewCdn())
-				cdnHost = getCdnHost(site);
-
-			if (cdnHost.empty())
-				cdnHost = getPrimaryCdnHost(site);
-
-			if (!cdnHost.empty())
-			{
-				try
-				{
-					std::string tmp = etag;
-					int status_code = httpGet(site, cdnHost, path, tmp, result, ignoreCancel, progress);
-					switch (status_code)
-					{
-					case 200:
-					case 304:
-						// We succeeded so save the etag and return success
-						etag = tmp;
-						return status_code;
-					default:
-						LLOG_ENTRY3(site->Logger(), "Failure getting '%s' from cdnHost='%s', falling back to secondaryHost='%s'", path.c_str(), cdnHost.c_str(), secondaryHost.c_str());
-						// Failure of some kind, fall back to secondaryHost below
-						break;
-					}
-				}
-				catch (std::exception &)
-				{
-					// Trap first exception and try again with secondaryHost
-				}
-			}
-
-			// Reset our result vector
-			result.seekp(0);
-			result.clear();
-
-			return httpGet(site, secondaryHost, path, etag, result, ignoreCancel, progress);
+			LLOG_ENTRY(site->Logger(), "httpBoost failed, falling back to winInet");
+			return httpWinInet(site, method, host, path, input, contentType, etag, result, ignoreCancel, progress);
 		}
 	}
+
+	int httpPost(IInstallerSite * site, std::string host, std::string path, std::istream & input, const char *contentType, std::ostream &result, bool ignoreCancel, std::function<void(int, int)> progress, bool log)
+	{
+		std::string etag;
+		return http(site, "POST", host, path, input, contentType, etag, result, ignoreCancel, progress, log);
+	}
+
+	int httpGetCdn(IInstallerSite * site, std::string secondaryHost, std::string path, std::string & etag, std::ostream & result, bool ignoreCancel, std::function<void(int, int)> progress)
+	{
+		std::string cdnHost;
+		if (site->UseNewCdn())
+			cdnHost = getCdnHost(site);
+
+		if (cdnHost.empty())
+			cdnHost = getPrimaryCdnHost(site);
+
+		if (!cdnHost.empty())
+		{
+			try
+			{
+				std::string tmp = etag;
+				int status_code = httpGet(site, cdnHost, path, tmp, result, ignoreCancel, progress);
+				switch (status_code)
+				{
+				case 200:
+				case 304:
+					// We succeeded so save the etag and return success
+					etag = tmp;
+					return status_code;
+				default:
+					LLOG_ENTRY3(site->Logger(), "Failure getting '%s' from cdnHost='%s', falling back to secondaryHost='%s'", path.c_str(), cdnHost.c_str(), secondaryHost.c_str());
+					// Failure of some kind, fall back to secondaryHost below
+					break;
+				}
+			}
+			catch (std::exception &)
+			{
+				// Trap first exception and try again with secondaryHost
+			}
+		}
+
+		// Reset our result vector
+		result.seekp(0);
+		result.clear();
+
+		return httpGet(site, secondaryHost, path, etag, result, ignoreCancel, progress);
+	}
+}

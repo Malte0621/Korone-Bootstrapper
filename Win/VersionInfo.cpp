@@ -14,7 +14,6 @@ All rights reserved.
 #include "stdafx.h"
 #include "VersionInfo.h"
 
-#include "boost/tokenizer.hpp"
 #include "format_string.h"
 #include "StringConv.h"
 //#include "FastLog.h"      Disable to get compiler working - RWM

@@ -9,6 +9,7 @@
 #include <commctrl.h>
 #include <Psapi.h>
 #include <string>
+#include <memory>
 
 #pragma comment (lib,"Psapi.lib")
 
