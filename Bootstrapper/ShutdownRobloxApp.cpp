@@ -9,7 +9,6 @@
 #include <commctrl.h>
 #include <Psapi.h>
 #include <string>
-#include <boost/bind.hpp>
 
 #pragma comment (lib,"Psapi.lib")
 
@@ -130,7 +129,8 @@ bool ShutdownRobloxApp::run()
 		}
 	} 
 	this->result = false;
-	std::for_each(pids.begin(), pids.end(), boost::bind(&ShutdownRobloxApp::terminateApp, this, _1));
+	for (DWORD pid : pids)
+		terminateApp(pid);
 
 	return this->result;
 }

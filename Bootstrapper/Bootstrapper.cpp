@@ -20,8 +20,6 @@
 #include "StringConv.h"
 #include "RobloxServicesTools.h"
 
-#include <boost/thread/thread.hpp>
-#include <boost/bind.hpp>
 #include <vector>
 #include <strstream>
 
@@ -945,10 +943,10 @@ std::shared_ptr<Bootstrapper> Bootstrapper::Create(HINSTANCE hInstance, Bootstra
 	}
 	else
 	{
-		boost::thread(boost::bind(&Bootstrapper::run, result));
+		std::thread([result]() { result->run(); }).detach();
 		if (result->windowDelay)
 		{
-			boost::thread(boost::bind(&Bootstrapper::showWindowAfterDelay, result));
+			std::thread([result]() { result->showWindowAfterDelay(); }).detach();
 		}
 		else
 		{

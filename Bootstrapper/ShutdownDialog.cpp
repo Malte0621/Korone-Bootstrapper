@@ -2,8 +2,6 @@
 #include "ShutdownDialog.h"
 #include "VistaTools.h"
 #include "atlsync.h"
-#include <boost/thread/thread.hpp>
-#include <boost/bind.hpp>
 #include <commctrl.h>
 #include "commonresourceconstants.h"
 
@@ -154,7 +152,7 @@ public:
 		, dialogResult(-1)
 	{
 		sprintf_s(instructions, 256, "Korone needs to close \"%s\"", windowTitle);
-		boost::thread(boost::bind(&CShutdownTaskDialog::run, this, instance, parent));
+		std::thread(&CShutdownTaskDialog::run, this, instance, parent).detach();
 	}
 	~CShutdownTaskDialog(void)
 	{
